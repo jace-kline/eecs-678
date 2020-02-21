@@ -1,6 +1,6 @@
 // This code is implemented for fourth lab of EECS 678 Lab - University of Kansas
 
-#define LAB_CODE
+// #define LAB_CODE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,8 +28,9 @@ int main(int argc,char* argv[]) {
     // value(number of files) to the parent. Parent should read it and wait for child
     // to finish.
     int pipe_fd[2]; // pipe_fd[0] ~ read , pipe_fd[1] ~ write
-    pipe(pipe_fd);
-    pid_t id = fork();
+    int buf; // buffer to hold pipe integer
+    pipe(pipe_fd); // Create pipe
+    pid_t id = fork(); // Create child process
      switch (id)
      {
         case -1: {// Error
@@ -37,12 +38,18 @@ int main(int argc,char* argv[]) {
             break;
         }
         case 0: {// Child Process
+            close(pipe_fd[0]); // close read end of pipe in child
             int ret = getNumOfFilesRec(argv[1]);
             write(pipe_fd[1], &ret, sizeof(int));
+            close(pipe_fd[1]); // close write end after writing
             exit(0);
+            break;
         }
         default: {// Parent Process ( id > 0 )
-            read(pipe_fd[0], &numOfFiles, sizeof(int));
+            close(pipe_fd[1]); // close write end of pipe in parent
+            read(pipe_fd[0], &buf, sizeof(int));
+            close(pipe_fd[0]);
+            numOfFiles = buf;
             wait(NULL);
             break;
         }
@@ -114,8 +121,11 @@ int getNumOfFilesRec(char path[PATH_MAX]){
                     break;
                 }
                 case 0: {// Child process
-                    getNumOfFilesRec(targetPath);
-                    read(fd[0], &ret, sizeof(int));
+                    close(fd[0]);
+                    ret = getNumOfFilesRec(targetPath);
+                    write(fd[1], &ret, sizeof(int));
+                    close(fd[1]);
+                    exit(0);
                     break;
                 }
                 default: {// Parent process
@@ -143,13 +153,15 @@ int getNumOfFilesRec(char path[PATH_MAX]){
 #ifdef LAB_CODE
     // read the number of files integer coming from children and
     // wait all of them to finish execution
-    //write(fd[1], )
+
+    close(fd[1]); // Only executed if parent -> close the write end of pipe
+    int tmp;
     for(int i = 0; i < num_children; i++) {
-        int tmp;
         read(fd[0], &tmp, sizeof(int));
         wait(NULL);
         numOfFiles += tmp;
     }
+    close(fd[0]); // Close read end
 
 #endif
 
@@ -159,6 +171,8 @@ finish:
         perror("Failed to close directory");
         return -1;
     }
+
+    // printf("Process %u returning from path %s with value %d\n", getpid(), path, numOfFiles);
 
     return numOfFiles;
 }
