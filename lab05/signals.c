@@ -85,9 +85,14 @@ void catch_int(int sig_num)
      and write your code for each of these combinations */
   //Your code
   if(ctrl_z_pressed || ctrl_c_pressed) {
-    if(ctrl_c_pressed) ctrl_c_ctrl_z_count = 0;
-    else if(ctrl_z_pressed) ctrl_c_ctrl_z_count++;
-    printf(" - Count: %d\n", ctrl_c_ctrl_z_count);
+    if(ctrl_c_pressed) {
+      ctrl_c_ctrl_z_count = 0; 
+      printf(" Count - Resetting\n");
+    }
+    else if(ctrl_z_pressed) {
+      ctrl_c_ctrl_z_count++;
+      printf(" - Count: %d\n", ctrl_c_ctrl_z_count);
+    }
     fflush(stdout);
   }
   ctrl_c_pressed = true;
@@ -106,9 +111,14 @@ void catch_tstp(int sig_num)
      and write your code for each of these combinations */
   //Your code
   if(ctrl_z_pressed || ctrl_c_pressed) {
-    if(ctrl_z_pressed) ctrl_c_ctrl_z_count = 0;
-    else if(ctrl_c_pressed) ctrl_c_ctrl_z_count++;
-    printf(" - Count: %d\n", ctrl_c_ctrl_z_count);
+    if(ctrl_z_pressed) {
+      ctrl_c_ctrl_z_count = 0; 
+      printf(" Count - Resetting\n");
+    }
+    else if(ctrl_c_pressed) {
+      ctrl_c_ctrl_z_count++;
+      printf(" - Count: %d\n", ctrl_c_ctrl_z_count);
+    }
     fflush(stdout);
   }
   
