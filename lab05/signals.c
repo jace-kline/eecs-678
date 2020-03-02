@@ -8,6 +8,9 @@
 /* first, define the Ctrl-C-Ctrl-Z counter, initialize it with zero. */
 int ctrl_c_ctrl_z_count = 0;
 
+// Need to iterate mod 2. If goes back to 0, then we know need to reset the ctrl_c_pressed, ctrl_z_pressed.
+int mod2_counter = 0;
+
 /* boolean flags to keep track of the ^C and ^Z combinations */
 bool ctrl_c_pressed = false;
 bool ctrl_z_pressed = false;
@@ -22,14 +25,24 @@ pid_t my_pid;
 /* Implement alarm handler - (You should terminate the program with "kill" system call and SIGQUIT signal if the user has not responded */
 //Your code
 
+void catch_alrm(int sig_num) {
+  if(got_response == 0) {
+    printf("\nUser taking too long to respond.\n");
+    kill(my_pid, SIGQUIT);
+  }
+  got_response = 0;
+}
 
-void catch_alarm(int sig_num) {
-  if(got_response == 0) kill(getpid(), SIGQUIT);
+void iterate_mod2_counter() {
+  mod2_counter++;
+  if(mod2_counter % 2 == 0) {
+    ctrl_c_pressed = false;
+    ctrl_z_pressed = false;
+  }
 }
 
 void check_count(){
   /* Check if threshold was reached */
-  got_response = 0;
   if (ctrl_c_ctrl_z_count >= CTRL_C_CTRL_Z_THRESHOLD) {
     char answer[30];
 
@@ -42,12 +55,13 @@ void check_count(){
     fflush(stdout);
     fgets(answer, sizeof(answer), stdin);
     if (answer[0] == 'n' || answer[0] == 'N') {
-      printf("\nContinuing\n");
-      fflush(stdout);
-
       /* Keep track of the fact that the user has responded */
       //Your code
       got_response = 1;
+
+      printf("\nContinuing\n");
+      fflush(stdout);
+      
 
       /* Reset the ctrl_c_ctrl_z_count counter */
       //Your code
@@ -66,18 +80,20 @@ void catch_int(int sig_num)
 {
   /* Check for the following combinations:
       a. ^C ^C (reset counter)
-      b. ^C ^Z (increment counter)
+      b. ^Z ^C (increment counter)
       c. ^C    
      and write your code for each of these combinations */
   //Your code
-  int s2 = pause();
-  switch (s2) {
-    case SIGINT: ctrl_c_ctrl_z_count = 0; break;
-    case SIGTSTP: ctrl_c_ctrl_z_count++; break;
-    default: break;
+  if(ctrl_z_pressed || ctrl_c_pressed) {
+    if(ctrl_c_pressed) ctrl_c_ctrl_z_count = 0;
+    else if(ctrl_z_pressed) ctrl_c_ctrl_z_count++;
+    printf(" - Count: %d\n", ctrl_c_ctrl_z_count);
+    fflush(stdout);
   }
+  ctrl_c_pressed = true;
 
   check_count();
+  iterate_mod2_counter();
 }
 
 /* the Ctrl-Z signal handler */
@@ -85,27 +101,21 @@ void catch_tstp(int sig_num)
 {
   /* Check for the following combinations:
       a. ^Z ^Z (reset counter)
-      b. ^Z ^C (increment counter)
+      b. ^C ^Z (increment counter)
       c. ^Z
      and write your code for each of these combinations */
   //Your code
-    int s2 = pause();
-    switch (s2) {
-      case SIGTSTP: ctrl_c_ctrl_z_count = 0; break;
-      case SIGINT: ctrl_c_ctrl_z_count++; break;
-      default: break;
-    }
-  
-  check_count();
-}
-
-void handler(int sig_num) {
-  switch (sig_num) {
-    case SIGINT: catch_int(sig_num); break;
-    case SIGTSTP: catch_tstp(sig_num); break;
-    case SIGALRM: catch_alarm(sig_num); break;
-    default: break;
+  if(ctrl_z_pressed || ctrl_c_pressed) {
+    if(ctrl_z_pressed) ctrl_c_ctrl_z_count = 0;
+    else if(ctrl_c_pressed) ctrl_c_ctrl_z_count++;
+    printf(" - Count: %d\n", ctrl_c_ctrl_z_count);
+    fflush(stdout);
   }
+  
+  ctrl_z_pressed = true;
+
+  check_count();
+  iterate_mod2_counter();
 }
 
 int main(int argc, char* argv[])
@@ -113,27 +123,34 @@ int main(int argc, char* argv[])
   my_pid = getpid();
   printf("My PID: %d\n", my_pid);
 
-  struct sigaction sa;
-  memset(&sa, '\0', sizeof(sa));
-
-  sigset_t mask_set;  /* used to set a signal masking set. */
-
   /* setup mask_set */
   //Your code
-  sigfillset(&mask_set);
-  // sigdelset(&mask_set, SIGINT);
-  // sigdelset(&mask_set, SIGTSTP);
-  sigdelset(&mask_set, SIGALRM);
-  sa.sa_mask = mask_set;
-  
+  // sigset_t mask_set;  /* used to set a signal masking set. */
+  // sigfillset(&mask_set);
+  // sigdelset(&mask_set, SIGALRM);
 
-  
   /* set signal handlers */
   //Your code
-  sigaction(SIGINT, &sa, NULL);
-  sigaction(SIGTSTP, &sa, NULL);
-  sigaction(SIGALRM, &sa, NULL);
-  sa.sa_handler = handler;
+
+  struct sigaction sa_int, sa_tstp, sa_alrm;
+
+  sa_int.sa_handler = catch_int;
+  sigfillset(&sa_int.sa_mask);
+  sigdelset(&sa_int.sa_mask, SIGALRM);
+  sa_int.sa_flags = 0;
+
+  sa_tstp.sa_handler = catch_tstp;
+  sigfillset(&sa_tstp.sa_mask);
+  sigdelset(&sa_tstp.sa_mask, SIGALRM);
+  sa_tstp.sa_flags = 0;
+
+  sa_alrm.sa_handler = catch_alrm;
+  sigfillset(&sa_alrm.sa_mask);
+  sa_alrm.sa_flags = 0;
+  
+  sigaction(SIGINT, &sa_int, NULL);
+  sigaction(SIGTSTP, &sa_tstp, NULL);
+  sigaction(SIGALRM, &sa_alrm, NULL);
 
   while(true) pause();
 
