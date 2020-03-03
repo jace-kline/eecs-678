@@ -1,0 +1,9 @@
+# EECS 678 - Lab 06 Report
+* Name: Jace Kline
+* KUID: 2881618
+
+## Part 1 - fork.c
+1. Both the parent and the child processes will print this line. The parent will print "After fork, Process id = <child-id>". The child will print "After fork, Process id = 0". This is because the fork() system call returns a postive integer in the parent and it returns 0 in the child.
+2. If this line is commented, the child will no longer execute the execlp(...) call and will instead continue to sequentially execute the following statements in the code. This will result in the following lines being printed instead of the 'ls' command: "print after execlp" and "Final statement from Process: <child-id>".
+3. This line is only reached in the child process when the execlp(...) statement (from question 2) is commented out. This is because the execlp(...) system call will displace the current (child) process with the specified executable to execute, overwriting the address space. Hence, any following commands that occur after execlp(...) will not be executed if the execlp(...) command is executed correctly. This is why we must comment out the execlp(...) statement to get the targeted line to execute.
+4. If the parent process ends prior to the child process, then the child process will be reassigned to the 'init' process (with id = 1). This makes the child process an orphan process. Regarding the printing, everything will be the same except for the fact that it will print the line "In Child: <child-id>, Parent: 1" instead of the default version where 1 would have been replaced by <parent-id>. Another interesting behavior that occurs is that, when this program is run in BASH, the prompt will reappear when the parent process has terminated, but then the child process will print more output roughly 4 seconds later in the terminal.
