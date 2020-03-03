@@ -16,12 +16,13 @@ main()
   int num, fd;
 
   /* create a FIFO special file with name FIFO_NAME */
-
+  mkfifo(FIFO_NAME, 0666);
 
   /* open the FIFO file for reading. open() blocks for writers. */
   printf("waiting for writers...");
   fflush(stdout);
-  
+  fd = open(FIFO_NAME, O_RDONLY);
+
   printf("got a writer !\n");
 
   do{

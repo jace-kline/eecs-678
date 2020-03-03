@@ -24,5 +24,7 @@ int main(int argc, char *argv[])
   fprintf(stdout, "Fork-3 was called from process: %d\n", getpid());
   ret3 = fork();
 
+  // fprintf(stdout, "Process");
+
   return(0);
 }
