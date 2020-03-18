@@ -1,5 +1,19 @@
 #include "parse.h"
 
+template <typename T>
+return_w_msgs<T>::return_w_msgs(const T& obj, const std::vector<std::string>& msg_vect) {
+    item = obj;
+    msgs = msg_vect;
+}
+
+template <typename T>
+return_w_msgs<T>::~return_w_msgs() {}
+
+template <typename T>
+bool return_w_msgs<T>::anyMessages() const {
+    return(!msgs.empty());
+}
+
 Result::Result(Sequence *s, bool bg) : seq(s), background(bg) {}
 
 Result::~Result() {
@@ -8,6 +22,10 @@ Result::~Result() {
 
 bool Result::valid() const {
     return (seq != nullptr);
+}
+
+return_w_msgs<Result*> parse_Result(std::string s) {
+
 }
 
 Sequence::Sequence(ComWArgs* cwa) : com_w_args(cwa), next(nullptr), path(nullptr), redir_stdout(false) {}
@@ -74,7 +92,26 @@ FilePath::FilePath(std::string s) : str(s) {}
 
 FilePath::~FilePath() {}
 
-bool FilePath::isFile() const {
-    std::ifstream test(str.c_str()); 
-    return (test ? true : false);
+bool FilePath::isRegFile() const {
+    struct stat s;
+    if(stat(str.c_str(), &s) == 0) {
+        return(s.st_mode & S_IFREG);
+    }
+    return false;
+}
+
+bool FilePath::isDir() const {
+    struct stat s;
+    if(stat(str.c_str(), &s) == 0) {
+        return(s.st_mode & S_IFDIR);
+    }
+    return false;
+}
+
+bool FilePath::isExecutable() const {
+    struct stat s;
+    if(stat(str.c_str(), &s) == 0) {
+        return(s.st_mode & S_IXUSR);
+    }
+    return false;
 }

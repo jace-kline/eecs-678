@@ -2,11 +2,26 @@
 #define PARSE_H
 
 #include <bits/stdc++.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <string>
 #include <vector>
+
+template <typename T>
+class return_w_msgs {
+    public:
+        T item;
+        std::vector<std::string> msgs;
+        return_w_msgs<T>(const T&, const std::vector<std::string>&);
+        ~return_w_msgs<T>();
+        bool anyMessages() const;
+};
+
+std::vector<return_w_msgs<Result*>> parseLines(std::string s);
 
 class Result {
     public:
@@ -17,7 +32,7 @@ class Result {
         bool valid() const;
 };
 
-Result* parse_Result(std::string s);
+return_w_msgs<Result*> parse_Result(std::string s);
 
 class Sequence {
     public:
@@ -38,7 +53,7 @@ class Sequence {
         bool valid() const;
 };
 
-Sequence* parse_Sequence(std::string s);
+return_w_msgs<Sequence*> parse_Sequence(std::string s);
 
 class ComWArgs {
     public:
@@ -52,7 +67,7 @@ class ComWArgs {
         bool valid() const;
 };
 
-ComWArgs* parse_ComWArgs(std::string s);
+return_w_msgs<ComWArgs*> parse_ComWArgs(std::string s);
 
 class Command {
     public:
@@ -69,7 +84,7 @@ class Command {
         bool valid() const;
 };
 
-Command* parse_Command(std::string s);
+return_w_msgs<Command*> parse_Command(std::string s);
 
 class ArgList {
     public:
@@ -82,19 +97,19 @@ class ArgList {
 
 };
 
-ArgList* parse_ArgList(std::string s);
+return_w_msgs<ArgList*> parse_ArgList(std::string s);
 
 class FilePath {
     public:
         std::string str;
         FilePath(std::string s);
         ~FilePath();
-        bool isFile() const;
+        bool isRegFile() const;
         bool isDir() const;
         bool isExecutable() const;
 };
 
-FilePath* parse_FilePath(std::string s);
+return_w_msgs<FilePath*> parse_FilePath(std::string s);
 
 
 #endif
