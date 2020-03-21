@@ -1,6 +1,8 @@
 #ifndef PARSE_H
 #define PARSE_H
 
+#define LOGFILE ""
+
 #include <bits/stdc++.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -10,50 +12,64 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <regex>
 
-template <typename T>
-class return_w_msgs {
+class ParseError {
+    private:
+        std::string msg;
     public:
-        T item;
-        std::vector<std::string> msgs;
-        return_w_msgs<T>(const T&, const std::vector<std::string>&);
-        ~return_w_msgs<T>();
-        bool anyMessages() const;
+        ParseError(std::string m);
+        ~ParseError();
+        std::string what();
 };
 
-std::vector<return_w_msgs<Result*>> parseLines(std::string s);
+// std::vector<return_w_msgs<Result*>> parseLines(std::string s);
 
 class Result {
     public:
-        Sequence* seq;
+        RedirStdin* chain;
         bool background;
-        Result(Sequence* s, bool bg);
+        Result(RedirStdin* s, bool bg);
         ~Result();
-        bool valid() const;
 };
 
-return_w_msgs<Result*> parse_Result(std::string s);
+Result* parse_Result(std::string s);
 
-class Sequence {
+class RedirStdin {
+    public:
+        ComWArgs* com_w_args; // optional (if no redirect in)
+        FilePath* in_path; // optional (if no redirect in)
+        PipeSequence* pipe_sequence;
+        RedirStdin(ComWArgs*, FilePath*, PipeSequence*);
+        ~RedirStdin();
+        bool isRedir() const;
+};
+
+RedirStdin* parse_RedirStdin(std::string s);
+
+class PipeSequence {
+    public:
+        ComWArgs* com_w_args; // optional (if 1 or fewer pipes)
+        PipeSequence* next; // optional (if 1 or fewer pipes)
+        RedirStdout* redir_stdout; // optional (if 0 pipes)
+        PipeSequence(ComWArgs*, PipeSequence*, RedirStdout*);
+        ~PipeSequence();
+        bool isBridge() const;
+        bool isCap() const;
+};
+
+PipeSequence* parse_PipeSequence(std::string s);
+
+class RedirStdout {
     public:
         ComWArgs* com_w_args;
-
-        // CASE 1: pipe encountered
-        // CASE 2: redirect stdout to file
-        // CASE 3: redirect stdin to program
-        // DEFAULT: single ComWArgs (no pipes or redirects)
-        Sequence* next;
-        FilePath* path;
-        bool redir_stdout;
-        Sequence(ComWArgs*);
-        Sequence(ComWArgs*, Sequence*);
-        Sequence(ComWArgs*, FilePath*, bool stdout);
-        ~Sequence();
-        bool isEnd() const;
-        bool valid() const;
+        FilePath* out_path; // optional (if no redirect out)
+        RedirStdout(ComWArgs*, FilePath*);
+        ~RedirStdout();
+        bool isRedir() const;
 };
 
-return_w_msgs<Sequence*> parse_Sequence(std::string s);
+RedirStdout* parse_RedirStdout(std::string s);
 
 class ComWArgs {
     public:
@@ -67,7 +83,7 @@ class ComWArgs {
         bool valid() const;
 };
 
-return_w_msgs<ComWArgs*> parse_ComWArgs(std::string s);
+ComWArgs* parse_ComWArgs(std::string s);
 
 class Command {
     public:
@@ -84,7 +100,7 @@ class Command {
         bool valid() const;
 };
 
-return_w_msgs<Command*> parse_Command(std::string s);
+Command* parse_Command(std::string s);
 
 class ArgList {
     public:
@@ -97,7 +113,7 @@ class ArgList {
 
 };
 
-return_w_msgs<ArgList*> parse_ArgList(std::string s);
+ArgList* parse_ArgList(std::string s);
 
 class FilePath {
     public:
@@ -109,7 +125,7 @@ class FilePath {
         bool isExecutable() const;
 };
 
-return_w_msgs<FilePath*> parse_FilePath(std::string s);
+FilePath* parse_FilePath(std::string s);
 
 
 #endif
