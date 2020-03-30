@@ -10,45 +10,48 @@ typedef std::string FilePath;
 // First index is command, following are arguments
 typedef std::vector<std::string> Command;
 
-enum ExecutableType {BUILTIN, PIPELINE};
+enum ParseType {BUILTIN, PIPELINE};
 enum RedirType {IN, OUT};
 
-// Implemented by the Builtin or Pipeline types
-class Executable {
-    // public:
-    //     virtual void run() = 0;
-};
+// template <typename T>
+// class Maybe {
+//     private:
+//         T item;
+//         bool nothing;
+//     public:
+//         Maybe<T>();
+//         Maybe<T>(const T& obj);
+//         ~Maybe<T>();
+//         bool isNothing() const;
+//         T getItem() const;
+// };
 
-class Builtin : public Executable {
+
+class Builtin {
     public:
-        ExecutableType exec_type;
+        // ParseType parse_type;
         Command command;
         Builtin(const Command& c);
         ~Builtin();
 };
 
-class Pipeline : public Executable {
+class Pipeline {
     public:
-        ExecutableType exec_type;
+        // ParseType parse_type;
         std::vector<Command> command_sequence;
-        Maybe<FilePath> m_redir_in;
-        Maybe<FilePath> m_redir_out;
+        FilePath* redir_in;
+        FilePath* redir_out;
         bool is_background;
-        Pipeline(const std::vector<Command>& seq, const Maybe<FilePath>& in, const Maybe<FilePath>& out, bool bg);
+        Pipeline(const std::vector<Command>& seq, FilePath* in, FilePath* out, bool bg);
         ~Pipeline();
 };
 
-template <typename T>
-class Maybe {
-    private:
-        T item;
-        bool nothing;
-    public:
-        Maybe<T>();
-        Maybe<T>(const T& obj);
-        ~Maybe<T>();
-        bool isNothing() const;
-        T getItem() const;
+// Implemented by the Builtin or Pipeline types
+struct ParseStruct {
+    ParseType parse_type;
+    Builtin* builtin;
+    Pipeline* pipeline;
 };
+
 
 #endif

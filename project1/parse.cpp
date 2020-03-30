@@ -2,25 +2,29 @@
 
 template <typename T>
 bool inVector(const T& element, const std::vector<T>& v) {
-    std::vector<T>::iterator it;
-    it = std::find(v.begin(), v.end(), element);
-    return(it != v.end());
+    return(std::find(v.begin(), v.end(), element) != v.end());
 }
 
-Executable* constructExecutablePtr(const std::string& s) {
+ParseStruct constructParseStruct(const std::string& s) {
     // Get first word/command
     std::string w = getFirstWord(s);
-
+    ParseStruct ret;
     // Check whether command is a builtin
     try{
         if(inVector(w, builtins)) {
-            return(constructBuiltin(s));
-        } else return(constructPipeline(s));
+            ret.parse_type = BUILTIN;
+            ret.builtin = constructBuiltin(s);
+            ret.pipeline = nullptr;
+        } else {
+            ret.parse_type = PIPELINE;
+            ret.builtin = nullptr;
+            ret.pipeline = constructPipeline(s);
+        }
     }
     catch(std::runtime_error& e) {
         throw(e);
     }
-    return nullptr;
+    return ret;
 }
 
 Builtin* constructBuiltin(const std::string& s) {
@@ -29,7 +33,7 @@ Builtin* constructBuiltin(const std::string& s) {
     std::stringstream ss(s);
     while(ss >> w) {
         if(w == "|" || w == "<" || w == ">" || w == "&") {
-            throw(std::runtime_error("Redirection and pipe operators not permitted with builtin Quash commands."));
+            throw(std::runtime_error("Operator '" + w + "' not permitted with builtin Quash commands."));
         } else c.push_back(w);
     }
     Builtin* b = new Builtin(c);
@@ -37,40 +41,58 @@ Builtin* constructBuiltin(const std::string& s) {
 }
 
 Pipeline* constructPipeline(const std::string& s) {
-    std::vector<Command> seq;
-    std::vector<std::string> pipe_chunk;
-    std::stringstream ss(s);
-    std::string w;
-
     // Create a regular expression for determining
     // if should run as a background process
     std::regex r_bg("^\\s*(.*)\\s+&\\s*$");
     std::smatch m;
     bool bg = std::regex_match(s, m, r_bg);
-    w = bg ? m[1] : s;
+    std::string str = bg ? m[1] : s;
 
     // Split the pipeline into vector chunks, 
     // delimitted by '|'
+    // Make each argument surrounded by quotes " into a single
+    // string instead of delimitted by whitespace
+    std::vector<Command> seq;
+    Command pipe_chunk;
+    std::stringstream ss(str);
+    std::string w;
     while(!ss.eof()) {
+        pipe_chunk.clear();
         while(ss >> w) {
             if(w == "|") break;
-            else pipe_chunk.push_back(w);
+            else if(w.front() == '"') {
+                w = w.substr(1);
+                std::string y;
+                bool end = false;
+                while(ss >> y) {
+                    if(y.back() == '"') {
+                        y.pop_back();
+                        end = true;
+                    }
+                    w = w + ' ' + y;
+                    if(end) break;
+                    if(ss.eof()) throw(std::runtime_error("No closing quotation to corresponding open quotation in given command."));
+                }
+            }
+            pipe_chunk.push_back(w);
         }
         if(pipe_chunk.empty() && !ss.eof()) throw(std::runtime_error("Parse error when reading command pipeline."));
         else seq.push_back(pipe_chunk);
     }
 
-    Maybe<FilePath> m_redir_out = parseRedir(OUT, seq[seq.size() - 1]);
-    Maybe<FilePath> m_redir_in = parseRedir(IN, seq[0]);
+    FilePath* redir_out = parseRedir(OUT, seq[seq.size() - 1]);
+    FilePath* redir_in = parseRedir(IN, seq[0]);
 
-    std::regex r_valid_text("");
     for(Command chunk : seq) {
         for(std::string str : chunk) {
-            if(!std::regex_match(str, m, r_valid_text)) {
-                throw(std::runtime_error("Invalid character(s) present in text chunk '" + str + "', found while parsing command pipeline."));
+            if(str == "<" || str == ">" || str == "&") {
+                throw(std::runtime_error("Invalid special character '" + str + "' present in text chunk '" + vectToStr(chunk) + "', found while parsing command pipeline."));
             }
         }
     }
+
+    Pipeline* p = new Pipeline(seq, redir_in, redir_out, bg);
+    return(p);
 }
 
 std::string trimLeadingWhitespace(const std::string& s) {
@@ -90,12 +112,42 @@ std::string getFirstWord(const std::string& s) {
     return(w);
 }
 
-Maybe<FilePath> parseRedir(RedirType t, Command& c) {
+std::string vectToStr(const std::vector<std::string>& v) {
+    std::string str = "";
+    for(std::string s : v) {
+        str = str + "[" + s + "] ";
+    }
+    if(!str.empty()) str.pop_back();
+    return str;
+}
+
+FilePath* parseRedir(RedirType t, Command& c) {
     int com_size = c.size();
+    FilePath* fp = nullptr;
     if(com_size >= 3 && c[com_size - 2] == (t == IN ? "<" : ">")) {
-        Maybe<FilePath> m_fp(c.back());
+        fp = new std::string(c.back());
         c.pop_back();
         c.pop_back();
-        return(m_fp);
-    } else return Maybe<FilePath>();
+    } 
+    return(fp);
+}
+
+void addPathPrefixes(std::vector<Command>& seq, const Environment& env) {
+    std::string* s_ptr = nullptr;
+    for(Command& com : seq) {
+        if(com[0].front() != '/') {
+            s_ptr = env.inPath(com[0]);
+            if(s_ptr != nullptr) {
+                com[0] = *s_ptr;
+                delete s_ptr;
+                s_ptr = nullptr;
+            } else {
+                delete s_ptr;
+                throw(std::runtime_error("Executable file '" + com[0] + "' is not located in the PATH."));
+            }
+        }
+        if(!isExecutable(com[0])) {
+            throw(std::runtime_error("The file '" + com[0] + "' is not a valid executable."));
+        }
+    }
 }

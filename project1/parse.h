@@ -2,6 +2,7 @@
 #define PARSE_H
  
 #include "types.h"
+#include "environment.h"
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -17,7 +18,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 template <typename T>
 bool inVector(const T& element, const std::vector<T>& v);
 
-Executable* constructExecutablePtr(const std::string& s);
+ParseStruct constructParseStruct(const std::string& s);
 
 Builtin* constructBuiltin(const std::string& s);
 
@@ -29,6 +30,10 @@ std::string trimTrailingWhitespace(const std::string& s);
 
 std::string getFirstWord(const std::string& s);
 
-Maybe<FilePath> parseRedir(RedirType t, Command& c);
+std::string vectToStr(const std::vector<std::string>& v);
+
+FilePath* parseRedir(RedirType t, Command& c);
+
+void addPathPrefixes(std::vector<Command>& seq, const Environment& env);
 
 #endif
