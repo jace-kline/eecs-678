@@ -27,6 +27,7 @@ class JobHandler {
         ~JobHandler();
         void add(pid_t pid, const std::string& name);
         const std::vector<Job>& getJobs();
+        pid_t pidByJobID(int jobid);
 };
 
 #endif

@@ -18,6 +18,20 @@ Pipeline::~Pipeline() {
     if(redir_out != nullptr) delete redir_out;
 }
 
+std::string Pipeline::toStr() const {
+    std::string w = "";
+    int i = 0;
+    for(Command com : command_sequence) {
+        for(std::string s : com) {
+            w = w + s + ' ';
+        }
+        if(i == 0 && redir_in != nullptr) w = w + "< " + *redir_in + " ";
+        if(i == command_sequence.size() - 1 && redir_out != nullptr) w = w + "> " + *redir_out;
+        else if(i < command_sequence.size() - 1) w = w + "| ";
+    }
+    return w;
+}
+
 // template <typename T>
 // Maybe<T>::Maybe() : nothing(true) {}
 

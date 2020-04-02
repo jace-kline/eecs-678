@@ -3,18 +3,25 @@
 
 #include "parse.h"
 #include "job-handler.h"
-#include <unistd.h>
+#include <signal.h>
+#include <iomanip>
 
-// These 2 objects make up the global state of the program
-// Allows each child process to copy to their own address space
-Environment env;
-JobHandler job_handler;
+class ExecutionEnvironment {
+    private:
+        Environment env;
+        JobHandler job_handler;
 
-// error messages are thrown as exceptions, caught 
-// and displayed in main()
-void executeBuiltin(const Builtin& b);
+    protected:
+        // use env to prefix the executable locations
+        void prefixCommandPaths(std::vector<Command>& seq);
+        void executePipeline(Pipeline& p);
+        void executePipelineCore(Pipeline& p);
+        void executeBuiltin(Builtin& b);
 
-// returns pid of last command process in the pipeline
-int executePipeline(const Pipeline& p);
+    public:
+        ExecutionEnvironment();
+        ~ExecutionEnvironment();
+        void execute(ParseStruct& ps);
+};
 
 #endif

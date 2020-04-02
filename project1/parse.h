@@ -9,10 +9,12 @@
 #include <algorithm>
 #include <regex>
 
+#define WIDTH 10
+
 // Each parse step will have the possiblility to 
 // throw a std::runtime_error if construction not possible
 
-const std::vector<std::string> builtins = {"cd", "exit", "quit", "set", "jobs", "kill"};
+const std::vector<std::string> builtins = {"cd", "exit", "quit", "set", "jobs", "kill", "printvar"};
 const std::string WHITESPACE = " \n\r\t\f\v";
 
 template <typename T>
@@ -34,6 +36,6 @@ std::string vectToStr(const std::vector<std::string>& v);
 
 FilePath* parseRedir(RedirType t, Command& c);
 
-void addPathPrefixes(std::vector<Command>& seq, const Environment& env);
+// void addPathPrefixes(std::vector<Command>& seq, const Environment& env);
 
 #endif

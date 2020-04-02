@@ -115,7 +115,7 @@ std::string getFirstWord(const std::string& s) {
 std::string vectToStr(const std::vector<std::string>& v) {
     std::string str = "";
     for(std::string s : v) {
-        str = str + "[" + s + "] ";
+        str = str + s + " ";
     }
     if(!str.empty()) str.pop_back();
     return str;
@@ -132,22 +132,22 @@ FilePath* parseRedir(RedirType t, Command& c) {
     return(fp);
 }
 
-void addPathPrefixes(std::vector<Command>& seq, const Environment& env) {
-    std::string* s_ptr = nullptr;
-    for(Command& com : seq) {
-        if(com[0].front() != '/') {
-            s_ptr = env.inPath(com[0]);
-            if(s_ptr != nullptr) {
-                com[0] = *s_ptr;
-                delete s_ptr;
-                s_ptr = nullptr;
-            } else {
-                delete s_ptr;
-                throw(std::runtime_error("Executable file '" + com[0] + "' is not located in the PATH."));
-            }
-        }
-        if(!isExecutable(com[0])) {
-            throw(std::runtime_error("The file '" + com[0] + "' is not a valid executable."));
-        }
-    }
-}
+// void addPathPrefixes(std::vector<Command>& seq, const Environment& env) {
+//     std::string* s_ptr = nullptr;
+//     for(Command& com : seq) {
+//         if(com[0].front() != '/') {
+//             s_ptr = env.inPath(com[0]);
+//             if(s_ptr != nullptr) {
+//                 com[0] = *s_ptr;
+//                 delete s_ptr;
+//                 s_ptr = nullptr;
+//             } else {
+//                 delete s_ptr;
+//                 throw(std::runtime_error("Executable file '" + com[0] + "' is not located in the PATH."));
+//             }
+//         }
+//         if(!isExecutable(com[0])) {
+//             throw(std::runtime_error("The file '" + com[0] + "' is not a valid executable."));
+//         }
+//     }
+// }

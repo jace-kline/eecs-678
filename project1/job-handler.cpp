@@ -32,3 +32,10 @@ const std::vector<Job>& JobHandler::getJobs() {
     refresh();
     return jobs;
 }
+
+pid_t JobHandler::pidByJobID(int jobid) {
+    for(int i = 0; i < jobs.size(); i++) {
+        if(jobid == jobs[i].job_id) return(jobs[i].process_id);
+    }
+    return(-1);
+}

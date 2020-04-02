@@ -13,20 +13,6 @@ typedef std::vector<std::string> Command;
 enum ParseType {BUILTIN, PIPELINE};
 enum RedirType {IN, OUT};
 
-// template <typename T>
-// class Maybe {
-//     private:
-//         T item;
-//         bool nothing;
-//     public:
-//         Maybe<T>();
-//         Maybe<T>(const T& obj);
-//         ~Maybe<T>();
-//         bool isNothing() const;
-//         T getItem() const;
-// };
-
-
 class Builtin {
     public:
         // ParseType parse_type;
@@ -44,6 +30,7 @@ class Pipeline {
         bool is_background;
         Pipeline(const std::vector<Command>& seq, FilePath* in, FilePath* out, bool bg);
         ~Pipeline();
+        std::string toStr() const;
 };
 
 // Implemented by the Builtin or Pipeline types
