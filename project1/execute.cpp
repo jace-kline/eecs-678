@@ -140,7 +140,7 @@ void ExecutionEnvironment::executeBuiltin(Builtin& b) {
         exit(0);
     } else if(b.command[0] == "set") {
         if(size != 2) throw(std::runtime_error("Invalid argument count for command 'set'."));
-        std::regex r("^\\s*([^=]*)=\"?(.*)\"?\\s*$");
+        std::regex r("^\\s*([^=]*)=(.*)\\s*$");
         std::smatch m;
         std::string s1, s2;
         if(std::regex_match(b.command[1], m, r)) {

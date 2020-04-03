@@ -79,8 +79,18 @@ Pipeline* constructPipeline(const std::string& s) {
         else seq.push_back(pipe_chunk);
     }
 
+
+    // Parse Redirection operators. Ensure no duplicates.
+    FilePath* redir_in = nullptr;
+    FilePath* redir_in_1 = parseRedir(IN, seq[seq.size() - 1]);
     FilePath* redir_out = parseRedir(OUT, seq[seq.size() - 1]);
-    FilePath* redir_in = parseRedir(IN, seq[0]);
+    FilePath* redir_in_2 = nullptr;
+    if(seq.size() - 1 != 0) redir_in_2 = parseRedir(IN, seq[seq.size() - 1]);
+    FilePath* redir_in_3 = parseRedir(IN, seq[0]);
+
+    int cnt_in = (redir_in_1 == nullptr ? 0 : 1) + (redir_in_2 == nullptr ? 0 : 1) + (redir_in_3 == nullptr ? 0 : 1);
+    if(cnt_in > 1) throw(std::runtime_error("Invalid syntax. Redirection operator '<' repeated."));
+    redir_in = (redir_in_1 != nullptr ? redir_in_1 : (redir_in_2 != nullptr ? redir_in_2 : redir_in_3));
 
     for(Command chunk : seq) {
         for(std::string str : chunk) {
