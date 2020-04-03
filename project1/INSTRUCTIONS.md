@@ -1,6 +1,8 @@
 # Build Instructions
 ### Author: Jace Kline
-1. Compile (must have g++ and make installed)
+1. Extract the tar file
+2. Navigate to the directory with extracted files
+3. Compile (must have g++ and make installed)
 ```$ make```
-2. Run the executable
+4. Run the executable
 ```$ ./quash```
