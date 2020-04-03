@@ -28,26 +28,29 @@ std::string Pipeline::toStr() const {
         if(i == 0 && redir_in != nullptr) w = w + "< " + *redir_in + " ";
         if(i == command_sequence.size() - 1 && redir_out != nullptr) w = w + "> " + *redir_out;
         else if(i < command_sequence.size() - 1) w = w + "| ";
+        i++;
     }
     return w;
 }
 
-// template <typename T>
-// Maybe<T>::Maybe() : nothing(true) {}
+ParseStruct::ParseStruct(Builtin* b, Pipeline* p) {
+    builtin = b;
+    pipeline = p;
+    if((b == nullptr && p == nullptr) || (b != nullptr && p != nullptr)) {
+        parse_type = INVALID;
+    } 
+    else if(b != nullptr) parse_type = BUILTIN;
+    else parse_type = PIPELINE;
+}
 
-// template <typename T>
-// Maybe<T>::Maybe(const T& obj) : nothing(false) {
-//     item = obj;
-// }
-
-// template <typename T>
-// Maybe<T>::~Maybe() {}
-
-// template <typename T>
-// bool Maybe<T>::isNothing() const {return nothing;}
-
-// template <typename T>
-// T Maybe<T>::getItem() const {
-//     if(!isNothing()) return item;
-//     else throw(std::runtime_error("Invalid access of nonexistent item in a Nothing-constructed Maybe type."));
-// }
+ParseStruct::~ParseStruct() {
+    // clean up heap-allocated memory
+    if(builtin != nullptr) {
+        delete builtin;
+        builtin = nullptr;
+    }
+    if(pipeline != nullptr) {
+        delete pipeline;
+        pipeline = nullptr;
+    }
+}

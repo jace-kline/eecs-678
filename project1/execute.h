@@ -5,20 +5,21 @@
 #include "job-handler.h"
 #include <signal.h>
 #include <iomanip>
+#include <cstring>
 
 class ExecutionEnvironment {
-    private:
-        Environment env;
-        JobHandler job_handler;
 
     protected:
         // use env to prefix the executable locations
         void prefixCommandPaths(std::vector<Command>& seq);
         void executePipeline(Pipeline& p);
-        void executePipelineCore(Pipeline& p);
+        // void executePipelineCore(Pipeline& p);
+        // void executePipelineRecurse(Pipeline& p, int* fds, int i);
         void executeBuiltin(Builtin& b);
 
     public:
+        Environment env;
+        JobHandler job_handler;
         ExecutionEnvironment();
         ~ExecutionEnvironment();
         void execute(ParseStruct& ps);

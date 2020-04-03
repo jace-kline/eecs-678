@@ -26,4 +26,4 @@ user-interact.o: user-interact.h user-interact.cpp
 	g++ -std=c++11 -g -Wall -c user-interact.cpp
 
 clean:
-	rm prog *.o
+	rm prog *.o quash

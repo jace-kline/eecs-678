@@ -20,7 +20,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 template <typename T>
 bool inVector(const T& element, const std::vector<T>& v);
 
-ParseStruct constructParseStruct(const std::string& s);
+ParseStruct* constructParseStruct(const std::string& s);
 
 Builtin* constructBuiltin(const std::string& s);
 

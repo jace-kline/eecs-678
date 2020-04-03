@@ -5,26 +5,25 @@ bool inVector(const T& element, const std::vector<T>& v) {
     return(std::find(v.begin(), v.end(), element) != v.end());
 }
 
-ParseStruct constructParseStruct(const std::string& s) {
+ParseStruct* constructParseStruct(const std::string& s) {
     // Get first word/command
     std::string w = getFirstWord(s);
-    ParseStruct ret;
+    Pipeline* p;
+    Builtin* b;
     // Check whether command is a builtin
     try{
         if(inVector(w, builtins)) {
-            ret.parse_type = BUILTIN;
-            ret.builtin = constructBuiltin(s);
-            ret.pipeline = nullptr;
+            b = constructBuiltin(s);
+            p = nullptr;
         } else {
-            ret.parse_type = PIPELINE;
-            ret.builtin = nullptr;
-            ret.pipeline = constructPipeline(s);
+            b = nullptr;
+            p = constructPipeline(s);
         }
     }
     catch(std::runtime_error& e) {
         throw(e);
     }
-    return ret;
+    return (new ParseStruct(b, p));
 }
 
 Builtin* constructBuiltin(const std::string& s) {

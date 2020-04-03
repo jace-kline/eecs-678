@@ -5,6 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,6 +19,7 @@ class Environment {
         std::vector<std::string> path;
         std::string home;
         std::string cwd;
+        // std::vector<std::string> vars;
 
     public:
         Environment();
@@ -28,10 +30,12 @@ class Environment {
         bool setPath(const std::string& s);
         bool setHome(const std::string& s);
         bool setCwd(const std::string& s);
+        void put(const std::string& s1, const std::string& s2);
         std::string* inPath(const std::string& s) const;
         const std::vector<std::string>& getPath() const; 
         std::string getHome() const;
         std::string getCwd() const;
+        // const std::vector<std::string>& getVars() const;
 };
 
 

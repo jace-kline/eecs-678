@@ -2,32 +2,29 @@
 #include "execute.h"
 
 int main() {
+    //setvbuf(stdout, NULL, _IONBF, 0);
     ExecutionEnvironment executer = ExecutionEnvironment();
-    ParseStruct ps;
+    ParseStruct* ps = nullptr;
     while(true) {
         // read input line into a string
         std::string s = promptReadStdinLine();
-        try {
-            // attempt to construct a ParseStruct
-            ps = constructParseStruct(s);
-
-            // pass the ParseStruct to the executer to execute
-            executer.execute(ps);
-
-        } catch(std::runtime_error& e) {
-            std::cout << e.what() << '\n';
+        if(!s.empty()) {
+            try {
+                // attempt to construct a ParseStruct
+                ps = constructParseStruct(s);
+                // pass the ParseStruct to the executer to execute
+                if(ps != nullptr && ps->parse_type != INVALID) executer.execute(*ps);
+            } catch(std::runtime_error& e) {
+                std::cout << e.what() << '\n';
+            }
         }
 
-        // clean up heap-allocated memory
-        if(ps.builtin != nullptr) {
-            delete ps.builtin;
-            ps.builtin = nullptr;
-        }
-        if(ps.pipeline != nullptr) {
-            delete ps.pipeline;
-            ps.pipeline = nullptr;
-        }
+        executer.job_handler.refresh();
 
+        if(ps != nullptr) {
+            delete ps;
+            ps = nullptr;
+        }
     } 
     return 0;
 }

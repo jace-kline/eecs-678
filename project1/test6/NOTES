@@ -1,0 +1,6 @@
+PATH variable is used by the shell to search for executables specified using the relative path ("ls" vs "/bin/ls").
+Thus, changing the PATH variable can affect the executable that is found and executed by the shell. 
+
+Run the attached "bash6.txt" on your Linux command-line to see the expected output.
+
+$> sh < bash.txt

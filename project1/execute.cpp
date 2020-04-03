@@ -39,25 +39,31 @@ void ExecutionEnvironment::execute(ParseStruct& ps) {
     }
 }
 
-void ExecutionEnvironment::executePipeline(Pipeline& p) {
-    if(p.is_background) {
-        pid_t pid;
-        if((pid = fork()) == 0) {
-            // in child process
-            executePipelineCore(p);
-            exit(0);
-        } else if(pid > 0) {
-            // in parent process
-            job_handler.add(pid, p.toStr());
-        } else {
-            throw(std::runtime_error("Fork failed."));
-        }
-    } else {
-        executePipelineCore(p);
-    }
-}
+// void ExecutionEnvironment::executePipeline(Pipeline& p) {
+//     if(p.is_background) {
+//         int fds[2];
+//         pipe(fds);
+//         pid_t pid;
+//         if(fork() == 0) {
+//             // in child process
+//             close(fds[0]);
+//             pid = executePipelineCore(p);
+//             write(fds[1], &pid, sizeof(pid));
+//             exit(0);
+//         } else if(pid > 0) {
+//             // in parent process
+//             close(fds[1]);
+//             read(fds[0], &pid, sizeof(pid));
+            
+//         } else {
+//             throw(std::runtime_error("Fork failed."));
+//         }
+//     } else {
+//         executePipelineCore(p);
+//     }
+// }
 
-void ExecutionEnvironment::executePipelineCore(Pipeline& p) {
+void ExecutionEnvironment::executePipeline(Pipeline& p) {
     int fd_stdin_backup = dup(0);
     int fd_stdout_backup = dup(1);
 
@@ -69,7 +75,6 @@ void ExecutionEnvironment::executePipelineCore(Pipeline& p) {
     pid_t pid;
     // Iterate through the command chain
     for(int i = 0; i < p.command_sequence.size(); i++) {
-        std::cout << "Command to execute: " << vectToStr(p.command_sequence[i]) << '\n';
         // Set file descriptor 0 to fd_in
         // This "mimicks" the stdin
         dup2(fd_in, 0);
@@ -77,7 +82,7 @@ void ExecutionEnvironment::executePipelineCore(Pipeline& p) {
 
         // Check if last command
         if(i == p.command_sequence.size() - 1) {
-            if(p.redir_out != nullptr) fd_out = open(p.redir_out->c_str(), O_WRONLY);
+            if(p.redir_out != nullptr) fd_out = creat(p.redir_out->c_str(), 0666);
             else fd_out = dup(fd_stdout_backup);
         } else {
             int pipefds[2];
@@ -97,8 +102,8 @@ void ExecutionEnvironment::executePipelineCore(Pipeline& p) {
             // Convert command vector into cstring array
             int size = p.command_sequence[i].size();
             char* arr[size + 1];
-            for(int j = 0; j < size; i++) {
-                strcpy(arr[j], p.command_sequence[i][j].c_str());
+            for(int j = 0; j < size; j++) {
+                arr[j] = &p.command_sequence[i][j][0];
             }
             arr[size] = NULL;
 
@@ -114,10 +119,16 @@ void ExecutionEnvironment::executePipelineCore(Pipeline& p) {
     dup2(fd_stdout_backup, 1);
     close(fd_stdin_backup);
 
-    // wait for last child process to finish
+    // if not background, wait for last child process to finish
     int status;
-    waitpid(pid, &status, 0);
+    if(p.is_background) {
+        job_handler.add(pid, p.toStr());
+        const Job& j = job_handler.getJobs().back();
+        std::cout << '[' << j.job_id << "]\t" << j.process_id << "\trunning in background.\n";
+    }
+    else waitpid(pid, &status, 0);
 }
+
 
 void ExecutionEnvironment::executeBuiltin(Builtin& b) {
     int size = b.command.size();
@@ -129,12 +140,28 @@ void ExecutionEnvironment::executeBuiltin(Builtin& b) {
         exit(0);
     } else if(b.command[0] == "set") {
         if(size != 2) throw(std::runtime_error("Invalid argument count for command 'set'."));
-        std::regex r("^\\s*([^=]*)=([^=]*)\\s*$");
+        std::regex r("^\\s*([^=]*)=\"?(.*)\"?\\s*$");
         std::smatch m;
+        std::string s1, s2;
         if(std::regex_match(b.command[1], m, r)) {
-            if(m[1] == "HOME") env.setHome(m[2]);
-            else if(m[2] == "PATH") env.setPath(m[2]);
-            else std::cout << "Only HOME and PATH are supported by the Quash Shell.\n";
+            s1 = m[1];
+            if(m[1] == "HOME") {
+                env.setHome(m[2]);
+                s2 = env.getHome();
+            }
+            else if(m[1] == "PATH") {
+                env.setPath(m[2]);
+                s2 = "";
+                int i = 0;
+                for(std::string w : env.getPath()) {
+                    s2 += w;
+                    if(i < env.getPath().size() - 1) s2 += ":";
+                    i++;
+                }
+            }
+            else s2 = m[2];
+            // env.put(s1, s2);
+            setenv(s1.c_str(), s2.c_str(), 1);
         } else throw(std::runtime_error("Invalid argument structure for command 'set'."));
     } else if(b.command[0] == "jobs") {
         if(size > 1) throw(std::runtime_error("Too many arguments to command 'jobs'."));
@@ -142,7 +169,6 @@ void ExecutionEnvironment::executeBuiltin(Builtin& b) {
         std::cout << std::left << std::setw(WIDTH) << std::setfill(' ') << "JOBID";
         std::cout << std::left << std::setw(WIDTH) << std::setfill(' ') << "PID";
         std::cout << "COMMAND" << '\n';
-        std::cout << std::left << std::setw(40) << std::setfill('_') << std::endl;
         for(Job j : job_handler.getJobs()) {
             std::cout << std::left << std::setw(WIDTH) << std::setfill(' ') << j.job_id;
             std::cout << std::left << std::setw(WIDTH) << std::setfill(' ') << j.process_id;
@@ -150,8 +176,8 @@ void ExecutionEnvironment::executeBuiltin(Builtin& b) {
         }
     } else if(b.command[0] == "kill") {
         if(size != 3) throw(std::runtime_error("Invalid argument count for command 'kill'."));
-        pid_t pid = (pid_t)std::stoi(b.command[1]);
-        int sig = std::stoi(b.command[2]);
+        pid_t pid = job_handler.pidByJobID(std::stoi(b.command[2]));
+        int sig = std::stoi(b.command[1]);
         int status = kill(pid, sig);
         if(status == -1) std::cout << "Error on command 'kill'. The signal was not sent.\n";
         else std::cout << "Signal " << sig << " sent to Process ID " << pid << ".\n";
@@ -163,11 +189,9 @@ void ExecutionEnvironment::executeBuiltin(Builtin& b) {
                 w = w + dir + ":";
             }
             w.pop_back();
-            std::cout << "PATH=" << w << '\n';
+            std::cout << w << '\n';
         } else if(b.command[1] == "HOME") {
-            std::cout << "HOME=" << env.getHome() << '\n';
-        } else {
-            std::cout << "The environment variable '" << b.command[1] << "' is not supported by Quash Shell.\n";
-        }
+            std::cout << env.getHome() << '\n';
+        } else std::cout << b.command[1] << '=' << std::getenv(b.command[1].c_str()) << '\n';
     } else throw(std::runtime_error("Error running builtin command."));
 }

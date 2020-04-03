@@ -9,12 +9,12 @@ JobHandler::~JobHandler() {}
 void JobHandler::refresh() {
     pid_t ret;
     int status;
-    std::vector<Job>::iterator it = jobs.begin();
-    for(it; it != jobs.end(); it++) {
-        ret = waitpid(jobs.at(it - jobs.begin()).process_id, &status, WNOHANG);
+    for(int i = 0; i < jobs.size(); i++) {
+        ret = waitpid(jobs.at(i).process_id, &status, WNOHANG);
         // Process terminated or error
-        if(ret < 0 || ret == jobs.at(it - jobs.begin()).process_id) {
-            jobs.erase(it);
+        if(ret < 0 || ret == jobs.at(i).process_id) {
+            std::cout << '[' << jobs.at(i).job_id << "]\t" << jobs.at(i).process_id << " finished " << jobs.at(i).command_name << "\n";
+            jobs.erase(jobs.begin() + i);
         }
     }
 }

@@ -10,7 +10,7 @@ typedef std::string FilePath;
 // First index is command, following are arguments
 typedef std::vector<std::string> Command;
 
-enum ParseType {BUILTIN, PIPELINE};
+enum ParseType {BUILTIN, PIPELINE, INVALID};
 enum RedirType {IN, OUT};
 
 class Builtin {
@@ -34,10 +34,13 @@ class Pipeline {
 };
 
 // Implemented by the Builtin or Pipeline types
-struct ParseStruct {
-    ParseType parse_type;
-    Builtin* builtin;
-    Pipeline* pipeline;
+class ParseStruct {
+    public:
+        ParseType parse_type;
+        Builtin* builtin;
+        Pipeline* pipeline;
+        ParseStruct(Builtin*, Pipeline*);
+        ~ParseStruct();
 };
 
 

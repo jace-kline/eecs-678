@@ -5,6 +5,7 @@
 #include <vector>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <iostream>
 
 struct Job {
     int job_id;
@@ -16,11 +17,6 @@ class JobHandler {
     private:
         std::vector<Job> jobs;
         int id_iter;
-
-    protected:
-        // Query each job's process to see if still running
-        // If job not running (or error), delete
-        void refresh(); 
         
     public:
         JobHandler();
@@ -28,6 +24,7 @@ class JobHandler {
         void add(pid_t pid, const std::string& name);
         const std::vector<Job>& getJobs();
         pid_t pidByJobID(int jobid);
+        void refresh();
 };
 
 #endif
