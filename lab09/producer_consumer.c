@@ -344,7 +344,6 @@ void *consumer (void *carg)
   pcdata *mydata;
   int     my_tid;
   int    *total_consumed;
-  int deadlock_breaker = 0;
 
   mydata = (pcdata *) carg;
 
@@ -544,7 +543,8 @@ int main (int argc, char *argv[])
   for (i=0; i<pros; i++)
     pthread_join (pro[i], NULL);
   for (i=0; i<cons; i++) {
-    // This is to avoid indefinite sem_wait on consumer threads
+    // My solution:
+    // This is to avoid indefinite sem_wait on remaining consumer threads
     // Added an additional check within the consumer thread to accomodate
     sem_post(fifo->slotsToGet);
     pthread_join (con[i], NULL);
