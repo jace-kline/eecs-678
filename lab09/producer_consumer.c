@@ -295,23 +295,22 @@ void *producer (void *parg)
 	 * get stuck in here, somebody should wake us.
      */
 
-    // My solution: Require lock to gain access to the queue
-    pthread_mutex_lock(fifo->mutex);
-
-    // How do we check that the semaphore value is actually valid for us to produce?
-    while (*total_inserted != WORK_MAX) {
+    if (*total_inserted < WORK_MAX) {
       // My solution: Wait till there are slots to place produced item
+      // Blocking wait until woken up by a 'sem_post' call from consumer thread
       sem_wait(fifo->slotsToPut);
       // printf ("prod %d:  FULL.\n", my_tid); // do not print that in your solution
-    }
-	
-	/*
+    } else {
+      /*
      * Check to see if the total produced by all producers has reached
      * the configured maximum, if so, we can quit.
      */
-    if (*total_inserted >= WORK_MAX) {
       break;
     }
+
+    // My solution: Require lock to gain access to the queue for critical section
+    if(*total_inserted < WORK_MAX) pthread_mutex_lock(fifo->mutex);
+    else break;
 
     /*
      * OK, so we produce an item. Increment the counter of total
@@ -322,9 +321,9 @@ void *producer (void *parg)
     queueAdd (fifo, item);
 	  ++(*total_inserted);
 
-    // My solution: post to the semaphore, then unlock access to the queue
-    sem_post(fifo->slotsToGet);
+    // My solution: unlock queue mutex, then increment consumers' semaphore
     pthread_mutex_unlock(fifo->mutex);
+    sem_post(fifo->slotsToGet);
 
     /*
      * Announce the production outside the critical section 
@@ -345,6 +344,7 @@ void *consumer (void *carg)
   pcdata *mydata;
   int     my_tid;
   int    *total_consumed;
+  int deadlock_breaker = 0;
 
   mydata = (pcdata *) carg;
 
@@ -364,24 +364,22 @@ void *consumer (void *carg)
 	 * get stuck in here, somebody should wake us.
      */
 
-    // My solution: Require lock to gain access to the queue
-    pthread_mutex_lock(fifo->mutex);
-
-    // How do we check that the semaphore value is actually valid for us to consume?
-    while (*total_consumed != WORK_MAX) {
+    if (*total_consumed < WORK_MAX) {
       // My solution: Wait on the consumer semaphore to signal us
+      // Blocking wait until woken up by a 'sem_post' call from producer thread
       sem_wait(fifo->slotsToGet);
       // printf ("con %d:   EMPTY.\n", my_tid);
-    }
-	
-	/*
+    } else {
+      /*
      * If total consumption has reached the configured limit, we can
      * stop
      */
-    if (*total_consumed >= WORK_MAX) {
       break;
     }
 
+    // My solution: Require lock to gain access to the queue for critical section
+    if(*total_consumed < WORK_MAX) pthread_mutex_lock(fifo->mutex);
+    else break;
 
     /*
      * Remove the next item from the queue. Increment the count of the
@@ -392,8 +390,9 @@ void *consumer (void *carg)
     queueRemove (fifo, &item);
     (*total_consumed)++;
 
-    // My solution: unlock access to the queue
+    // My solution: unlock queue mutex, then increment producer semaphore
     pthread_mutex_unlock(fifo->mutex);
+    sem_post(fifo->slotsToPut);
 
     /*
      * Do work outside the critical region to consume the item
@@ -544,8 +543,12 @@ int main (int argc, char *argv[])
    */
   for (i=0; i<pros; i++)
     pthread_join (pro[i], NULL);
-  for (i=0; i<cons; i++)
+  for (i=0; i<cons; i++) {
+    // This is to avoid indefinite sem_wait on consumer threads
+    // Added an additional check within the consumer thread to accomodate
+    sem_post(fifo->slotsToGet);
     pthread_join (con[i], NULL);
+  }
 
   /*
    * Delete the shared fifo, now that we know there are no users of
