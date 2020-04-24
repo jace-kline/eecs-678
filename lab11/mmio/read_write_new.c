@@ -49,10 +49,26 @@ int main (int argc, char *argv[])
   
   /* And use it to copy the file */
 
-  while((read (fdin, src, bufsz)) > 0) {
-    write (fdout, src, bufsz);
+  // Get info on the source file to extract # of bytes (file size)
+  if(fstat(fdin, &statbuf) == -1) {
+    perror("Could not read stats for input file.");
+    exit(errno);
+  }
+  
+  int srcbytes = (int)statbuf.st_size; // # of bytes in source file
+  int rembufsz = srcbytes % bufsz; // Size of the remainder buffer to read to
+  int iters = srcbytes / bufsz; // How many times we can iterate (read) with the input buffer size
+  char *src_rem = malloc(rembufsz);
+
+  // Copy the portion with specified buffer size
+  for (int i = 0; i < iters; i++) {
+    if((read (fdin, src, bufsz)) > 0) {
+      write (fdout, src, bufsz);
+    }
   }
 
+  // Copy the remainder (to make file sizes of source and destination match)
+  if((read (fdin, src_rem, rembufsz)) > 0) {
+    write (fdout, src_rem, rembufsz);
+  }
 } /* main */
-
-
