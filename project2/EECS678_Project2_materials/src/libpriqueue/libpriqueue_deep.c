@@ -10,7 +10,9 @@
 void node_init(node **n, void *ptr) {
   if(ptr != NULL) {
     *n = (node*)calloc(1,sizeof(node));
-    (*n)->item_ptr = ptr;
+    void *tmp_ptr = calloc(1,sizeof(*ptr));
+    memcpy(tmp_ptr, ptr, sizeof(*ptr));
+    (*n)->item_ptr = tmp_ptr;
     (*n)->next = NULL;
   } else {
     perror("NULL pointer passed to node constructor");
@@ -19,7 +21,7 @@ void node_init(node **n, void *ptr) {
 
 void node_destroy_solo(node* n) {
   if(n != NULL) {
-    // if(n->item_ptr != NULL) free(n->item_ptr);
+    if(n->item_ptr != NULL) free(n->item_ptr);
     n->next = NULL;
     free(n);
     n = NULL;
@@ -61,7 +63,6 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 {
   if(q != NULL && ptr != NULL) {
     node *n = q->front;
-    node *n_prev = n;
     node *new_n;
     node_init(&new_n, ptr);
 
@@ -70,22 +71,16 @@ int priqueue_offer(priqueue_t *q, void *ptr)
       return 0;
     }
 
-    for(int i = 0; ; i++) { 
-      if(n == NULL) {
-        n_prev->next = new_n;
+    for(int i = 1; ; i++) { 
+      if(n->next == NULL) {
+        n->next = new_n;
         return i;
       } 
-      else if(q->compare(ptr, n->item_ptr) < 0) {
-        if(n_prev == n) { // if at front of queue
-          q->front = new_n;
-          new_n->next = n;
-        } else {
-          new_n->next = n;
-          n_prev->next = new_n;
-        }
+      else if(q->compare(ptr, n->next->item_ptr) < 0) {
+        new_n->next = n->next;
+        n->next = new_n;
         return i;
       }
-      n_prev = n;
       n = n->next;
     }
   }
@@ -104,7 +99,9 @@ int priqueue_offer(priqueue_t *q, void *ptr)
 void *priqueue_peek(priqueue_t *q)
 {
 	if(q != NULL && q->front != NULL) {
-    return q->front->item_ptr;
+    void *tmp_ptr = malloc(sizeof(*q->front->item_ptr));
+    memcpy(tmp_ptr, q->front->item_ptr, sizeof(*q->front->item_ptr));
+    return tmp_ptr;
   }
   return NULL;
 }
@@ -172,23 +169,14 @@ int priqueue_remove(priqueue_t *q, void *ptr)
     node *n_prev = n;
     while(1) {
       if(n == NULL) break;
-      else if(n->item_ptr == ptr) {
-        if(n_prev == n) { // front of queue
-          n_prev = n->next;
-          node_destroy_solo(n);
-          n = n_prev;
-          q->front = n;
-        } else {
-          n_prev->next = n->next;
-          node_destroy_solo(n);
-          n = n_prev->next;
-        }
+      else if(memcmp(n->item_ptr, ptr, sizeof(*ptr)) == 0) {
+        n_prev->next = n->next;
+        node_destroy_solo(n);
+        n = n_prev;
         count++;
-      } 
-      else {
-        n_prev = n;
-        n = n->next;
       }
+      n_prev = n;
+      n = n->next;
     }
     return count;
   }

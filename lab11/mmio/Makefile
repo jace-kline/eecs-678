@@ -15,7 +15,7 @@ test:
 zip: 
 	make clean
 	mkdir $(STUDENT_ID)-mmio-lab
-	cp Makefile memmap.c read_write.c read_write_new.c REPORT.md REPORT.pdf $(STUDENT_ID)-mmio-lab/
+	cp Makefile memmap.c read_write.c read_write_new.c sample.ogg REPORT.md REPORT.pdf $(STUDENT_ID)-mmio-lab/
 	zip -r $(STUDENT_ID)-mmio-lab.zip $(STUDENT_ID)-mmio-lab
 	rm -rf $(STUDENT_ID)-mmio-lab
 
